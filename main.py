@@ -1,14 +1,34 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import fun
 from dotenv import load_dotenv
 
-def main():
-    while True:
-        x = input("You: ")
-        if x.lower() == "exit":
-            print("Exiting the chatbot. Goodbye!")
-            return
-        response = fun.gemini_chatbot_response(x)
-        print("bot: " + response)
-if __name__ == "__main__":    
-    load_dotenv()  # Load environment variables from .env file
-    main()
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """API endpoint for chatbot"""
+    try:
+        data = request.json
+        message = data.get('message', '').strip()
+        
+        if not message:
+            return jsonify({'error': 'Message cannot be empty'}), 400
+        
+        # Get response from Gemini API
+        response = fun.gemini_chatbot_response(message)
+        
+        return jsonify({'response': response}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'ok'}), 200
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5000)
